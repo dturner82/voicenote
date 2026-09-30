@@ -1,0 +1,6 @@
+**
+!demo/
+!demo/**
+!dist/
+!dist/**
+!nginx.conf
