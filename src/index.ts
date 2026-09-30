@@ -11,6 +11,14 @@ export class VoiceNote {
   	private readonly onError: VoiceNoteOptions["onError"];
   	private currentState: VoiceNoteState = "idle";
 
+	get state(): VoiceNoteState {
+		return this.currentState;
+	}
+
+	private isDestroyed(): boolean {
+		return this.currentState === "destroyed";
+	}
+
 	constructor(
 		container: HTMLElement, 
 		{
