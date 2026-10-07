@@ -1,4 +1,5 @@
 import $tmpl from "./tmpl.js";
+import { AudioVisualizer } from "./audioVisualizer.js";
 
 export interface VoiceNoteOptions {
 	onRecord?: (blob: Blob) => void;
@@ -15,6 +16,8 @@ export class VoiceNote {
 	private currentState: VoiceNoteState = "idle";
 	private stream: MediaStream | null = null;
 	private recorder: MediaRecorder | null = null;
+	private readonly audioVisualizer: AudioVisualizer;
+	private readonly visualizer: HTMLCanvasElement;
 
 	private readonly startButton: HTMLButtonElement;
   	private readonly stopButton: HTMLButtonElement;
@@ -60,6 +63,9 @@ export class VoiceNote {
 				Save
 			</button>
 			<p ref="status"></p>
+			<canvas ref="visualizer" width="640" height="120" hidden
+				role="img" aria-label="Live microphone volume: taller bars mean louder audio"
+				style="width: 100%; max-width: 640px; height: 120px; border-radius: 8px;"></canvas>
 		`);
 
 		this.audio = document.createElement("audio");
@@ -72,6 +78,8 @@ export class VoiceNote {
 		this.deleteButton = getRef("deleteButton", HTMLButtonElement);
 		this.saveButton = getRef("saveButton", HTMLButtonElement);
 		this.status = getRef("status", HTMLParagraphElement);
+		this.visualizer = getRef("visualizer", HTMLCanvasElement);
+		this.audioVisualizer = new AudioVisualizer(this.visualizer);
 
 		this.handleStart = () => { void this.start(); };
     	this.handleStop = () => this.stop();
@@ -154,6 +162,7 @@ export class VoiceNote {
 			
 			recorder.start();
 			this.setState("recording", "Recording…");
+			this.audioVisualizer.start(stream);
 			
 		} catch (error) {
 			if (!this.isDestroyed()) this.fail(error);
@@ -172,6 +181,7 @@ export class VoiceNote {
 		console.log("stop");
 		if (this.state !== "recording" || !this.recorder) return;
     	this.setState("stopping", "Finishing recording…");
+		this.audioVisualizer.stop();
     	this.recorder.stop();
     	this.stream?.getTracks().forEach(track => track.stop());
 
@@ -209,11 +219,11 @@ export class VoiceNote {
 			this.recorder = null;
 		}
 		
+		this.audioVisualizer.stop();
 		this.stream?.getTracks().forEach(track => track.stop());
 		this.stream = null;
 
 	}
-
 
 	/**************************************************
 	 * Stops playback, clears the current audio source, hides the audio
@@ -233,3 +243,5 @@ export class VoiceNote {
 	}
 
 }
+
+
