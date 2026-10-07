@@ -1,4 +1,5 @@
 import $tmpl from "./tmpl.js";
+import $date from "./date.js";
 import { AudioVisualizer } from "./audioVisualizer.js";
 
 export interface VoiceNoteOptions {
@@ -18,11 +19,14 @@ export class VoiceNote {
 	private recorder: MediaRecorder | null = null;
 	private readonly audioVisualizer: AudioVisualizer;
 	private readonly visualizer: HTMLCanvasElement;
+	private audioRecordStartTime: number = 0;
+	private timerInterval: ReturnType<typeof setInterval> | null = null;
 
 	private readonly startButton: HTMLButtonElement;
   	private readonly stopButton: HTMLButtonElement;
   	private readonly deleteButton: HTMLButtonElement;
   	private readonly saveButton: HTMLButtonElement;
+	private readonly timer: HTMLParagraphElement;
 	private readonly status: HTMLParagraphElement;
   	private readonly audio: HTMLAudioElement;
 	private url: string | null = null;
@@ -62,6 +66,7 @@ export class VoiceNote {
 			<button type="button" ref="saveButton">
 				Save
 			</button>
+			<p ref="timer"></p>
 			<p ref="status"></p>
 			<canvas ref="visualizer" width="640" height="120" hidden
 				role="img" aria-label="Live microphone volume: taller bars mean louder audio"
@@ -77,6 +82,7 @@ export class VoiceNote {
 		this.stopButton = getRef("stopButton", HTMLButtonElement);
 		this.deleteButton = getRef("deleteButton", HTMLButtonElement);
 		this.saveButton = getRef("saveButton", HTMLButtonElement);
+		this.timer = getRef("timer", HTMLParagraphElement);
 		this.status = getRef("status", HTMLParagraphElement);
 		this.visualizer = getRef("visualizer", HTMLCanvasElement);
 		this.audioVisualizer = new AudioVisualizer(this.visualizer);
@@ -104,6 +110,29 @@ export class VoiceNote {
 		this.status.textContent = message;
 		this.startButton.disabled = state !== "idle";
 		this.stopButton.disabled = state !== "recording";
+	}
+
+	private startTimer(): void {
+
+		this.timer.innerText = "0:00";
+		this.audioRecordStartTime = Date.now();
+
+		this.timerInterval = setInterval(() => {
+			const duration = ((Date.now() - this.audioRecordStartTime) / 1000);
+			let [minutes, seconds] = $date('i:s', duration).split(':');
+			this.timer.innerText = Number(minutes) + ":" + seconds;
+		}, 1000);
+
+	}
+	
+	private stopTimer(): void {
+
+		this.timer.innerText = "0:00";
+		if (this.timerInterval !== null) {
+			clearInterval(this.timerInterval);
+			this.timerInterval = null;
+		}
+
 	}
 
 	/**************************************************
@@ -163,6 +192,7 @@ export class VoiceNote {
 			recorder.start();
 			this.setState("recording", "Recording…");
 			this.audioVisualizer.start(stream);
+			this.startTimer();
 			
 		} catch (error) {
 			if (!this.isDestroyed()) this.fail(error);
@@ -182,6 +212,7 @@ export class VoiceNote {
 		if (this.state !== "recording" || !this.recorder) return;
     	this.setState("stopping", "Finishing recording…");
 		this.audioVisualizer.stop();
+		this.stopTimer();
     	this.recorder.stop();
     	this.stream?.getTracks().forEach(track => track.stop());
 
