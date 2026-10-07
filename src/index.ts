@@ -16,7 +16,10 @@ export class VoiceNote {
   	private readonly stopButton: HTMLButtonElement;
   	private readonly deleteButton: HTMLButtonElement;
   	private readonly saveButton: HTMLButtonElement;
-  	private readonly audio: HTMLAudioElement;
+	private readonly status: HTMLParagraphElement;
+  	// private readonly audio: HTMLAudioElement;
+	private readonly handleStart: () => void;
+  	private readonly handleStop: () => void;
 
 	get state(): VoiceNoteState {
 		return this.currentState;
@@ -50,15 +53,43 @@ export class VoiceNote {
 			<button type="button" ref="saveButton">
 				Save
 			</button>
+			<p ref="status"></p>
 		`);
+
+
 
 		this.startButton = getRef("startButton", HTMLButtonElement);
 		this.stopButton = getRef("stopButton", HTMLButtonElement);
 		this.deleteButton = getRef("deleteButton", HTMLButtonElement);
 		this.saveButton = getRef("saveButton", HTMLButtonElement);
+		this.status = getRef("status", HTMLParagraphElement);
 
-		// container.append(HTML);
+		this.handleStart = () => { void this.start(); };
+    	this.handleStop = () => this.stop();
+    	this.startButton.addEventListener("click", this.handleStart);
+    	this.stopButton.addEventListener("click", this.handleStop);
 
+		container.append(HTML);
+
+		this.setState("idle", "Ready to record.");
+
+	}
+
+	private setState(state: VoiceNoteState, message: string): void {
+		this.currentState = state;
+		this.status.textContent = message;
+		this.startButton.disabled = state !== "idle";
+		this.stopButton.disabled = state !== "recording";
+	}
+
+	async start(): Promise<void> {
+		console.log("start");
+		if (this.state !== "idle") return;
+    	this.setState("requesting", "Waiting for microphone permission…");
+	}
+
+	stop(): void {
+		console.log("stop");
 	}
 
 }

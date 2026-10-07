@@ -4,8 +4,11 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>VoiceNote Demo</title>
 	<h1>VoiceNote</h1>
+	<div id="recorder"></div>
 	<script type="module">
 		import { VoiceNote } from "../dist/index.js";
-		new VoiceNote();
+		const note = new VoiceNote(
+			document.querySelector("#recorder")
+    	);
 	</script>
 </html>
